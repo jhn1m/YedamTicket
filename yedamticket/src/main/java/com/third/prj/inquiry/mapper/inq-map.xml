@@ -1,0 +1,114 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.third.prj.inquiry.mapper.InquiryMapper">
+	<resultMap type="com.third.prj.inquiry.service.InquiryVO" id="inquiryResultMap">
+		<id property="inNo" column="in_no" />
+		<result property="title" column="title" />
+		<result property="content" column="content" />
+		<result property="inDt" column="indt" />
+		<result property="UId" column="u_id" />
+		<result property="kind" column="kind"/>
+	</resultMap>
+
+	<select id="getTotal" resultType="int">
+		SELECT COUNT(*)
+		FROM INQUIRY
+		WHERE
+		<if test="searchType == 'ALL'">(TITLE LIKE '%'||#{searchName}||'%'
+				OR U_ID LIKE '%'||#{searchName}||'%')</if>
+			<if test="searchType == 'TITLE'">TITLE LIKE '%'||#{searchName}||'%'</if>
+			<if test="searchType == 'KIND'">KIND LIKE '%'||#{searchName}||'%'</if>
+			<if test="searchType == null or searchType ==''"> 1 = 1</if>
+	</select>
+	
+	<select id="manaerInquiryList" resultType="com.third.prj.inquiry.service.InquiryVO">
+		<![CDATA[
+		SELECT IN_NO,TITLE,CONTENT,INDT,U_ID,KIND
+		FROM
+			(
+			SELECT ROWNUM RN, A.*
+			FROM (
+			SELECT IN_NO,TITLE,CONTENT,INDT,U_ID,KIND
+			FROM INQUIRY
+			WHERE
+			]]>
+			<if test="searchType == 'ALL'">(TITLE LIKE '%'||#{searchName}||'%'
+				OR U_ID LIKE '%'||#{searchName}||'%')</if>
+			<if test="searchType == 'TITLE'">TITLE LIKE '%'||#{searchName}||'%'</if>
+			<if test="searchType == 'KIND'">KIND LIKE '%'||#{searchName}||'%'</if>
+			<if test="searchType == null or searchType ==''"> 1 = 1</if>
+			<![CDATA[
+			ORDER BY IN_NO )A)
+		WHERE RN > (#{pageNum}-1) * #{amount}  AND RN <= #{pageNum} * #{amount}
+		]]>
+	</select>
+	
+	<select id="inquirySelectList" resultType="com.third.prj.inquiry.service.InquiryVO">
+		SELECT IN_NO,TITLE,CONTENT,INDT,U_ID,KIND
+		FROM INQUIRY
+		ORDER BY INDT DESC
+	</select>
+	
+	<select id="inquirySelect" resultType="com.third.prj.inquiry.service.InquiryVO">
+		SELECT IN_NO,TITLE,CONTENT,INDT,U_ID,KIND
+		FROM INQUIRY
+		WHERE IN_NO=#{inNo}
+	</select>
+	
+
+	<!-- 1:1문의 -->
+	<insert id="inquiryInsert" parameterType="com.third.prj.inquiry.service.InquiryVO">
+		<selectKey keyProperty="inNo" resultType="int" order="BEFORE">
+			SELECT NVL(MAX(IN_NO),0)+1 AS INNO 
+			FROM INQUIRY
+		</selectKey>
+		INSERT INTO INQUIRY(IN_NO
+						  , INDT
+						  , TITLE
+						  , CONTENT
+						  , U_ID
+						  , KIND)
+		VALUES(#{inNo}
+			 , #{inDt}
+			 , #{title}
+		     , #{content}
+		     , #{UId}
+		     , #{kind})
+	</insert>
+	
+	<update id="inquiryUpdate" parameterType="com.third.prj.inquiry.service.InquiryVO">
+		UPDATE INQUIRY
+		<set>
+			<if test="title != null"> TITLE = #{title},</if>
+			<if test="content != null"> CONTENT = #{content},</if>
+			<if test="kind != null"> KIND = #{kind},</if>
+		</set>
+		WHERE IN_NO = #{inNo}
+	</update>
+
+	<delete id="inquiryDelete" parameterType="com.third.prj.inquiry.service.InquiryVO">
+		DELETE FROM INQUIRY 
+		WHERE IN_NO = #{inNo}
+	</delete>
+	
+	<select id="getList"
+		resultType="com.third.prj.inquiry.service.InquiryVO">
+      	<![CDATA[
+			SELECT * 
+			FROM (
+	    		SELECT ROWNUM RN ,
+								A.*
+	    		FROM (  SELECT * 
+	          			FROM INQUIRY 
+	          			ORDER BY IN_NO DESC ) A ) 	 
+         WHERE RN > (#{pageNum}-1) * #{amount}  AND RN <= #{pageNum} * #{amount}
+		]]>
+	</select>
+	
+	<!-- 검색조건에 맞춰서 total변경 -->
+	<!-- <select id="getTotal" resultType="int">
+		SELECT COUNT(*) AS TOTAL FROM INQUIRY 
+	</select> -->
+	
+</mapper>
